@@ -1,6 +1,8 @@
 # SCX Scheduler Manager
 
-A Qt6 GUI application for managing sched-ext BPF schedulers via `scxctl` on Fedora with the CachyOS kernel.
+A Qt6 GUI application for managing sched-ext BPF schedulers via `scxctl` on Fedora with the CachyOS kernel. 
+
+**USE AT OWN RISK**
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 
