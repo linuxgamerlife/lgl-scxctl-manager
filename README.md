@@ -33,6 +33,23 @@ sudo dnf install scx-tools scx-scheds
 ```
 
 ### 3. Build dependencies
+I recommend creating a projects folder ~/projects and extract it here/
+
+```bash
+mkdir ~/projects
+```
+For the binary, create ~/bin and store it there. 
+```bash
+mkdir ~/bin
+```
+Add ~/bin to your path
+```bash
+nano ~/.bashrc
+```
+and add
+```bash
+export PATH="$PATH:~/bin"
+```
 
 ```bash
 sudo dnf install cmake gcc-c++ qt6-qtbase-devel
@@ -90,6 +107,8 @@ A filterable table of per-scheduler custom flags. Use the dropdown to narrow by 
 ## Available Schedulers
 
 The scheduler list is populated dynamically from `scxctl list`. On a typical CachyOS kernel install this includes:
+
+Not all Schedulers are available on Fedora. Added here in case the tool is used on other systems.
 
 | Scheduler         | Best for |
 |------------------|----------|
