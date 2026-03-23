@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+
+  <id>com.linuxgamerlife.lgl-scxctl-manager</id>
+
+  <name>SCX Scheduler Manager</name>
+  <summary>Qt6 GUI for managing sched-ext BPF schedulers via scxctl</summary>
+
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+
+  <description>
+    <p>
+      SCX Scheduler Manager is a graphical interface for managing sched-ext BPF
+      schedulers through the scxctl command-line tool — without touching the terminal.
+    </p>
+    <p>
+      Start, stop, and switch schedulers, view live scheduler status, manage
+      scx_loader.service autostart, and browse per-scheduler flags and workload
+      reference data.
+    </p>
+    <p>
+      If scxctl is not installed, the application opens in setup mode and displays
+      installation guidance without hard-failing.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">lgl-scxctl-manager.desktop</launchable>
+
+  <url type="homepage">https://github.com/linuxgamerlife/lgl-scxctl-manager</url>
+  <url type="bugtracker">https://github.com/linuxgamerlife/lgl-scxctl-manager/issues</url>
+
+  <developer id="com.linuxgamerlife">
+    <name>LinuxGamerLife</name>
+  </developer>
+
+  <categories>
+    <category>System</category>
+    <category>Settings</category>
+  </categories>
+
+  <keywords>
+    <keyword>scheduler</keyword>
+    <keyword>sched-ext</keyword>
+    <keyword>scx</keyword>
+    <keyword>bpf</keyword>
+    <keyword>kernel</keyword>
+    <keyword>performance</keyword>
+    <keyword>gaming</keyword>
+    <keyword>scxctl</keyword>
+  </keywords>
+
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+
+  <requires>
+    <display_length compare="ge">640</display_length>
+  </requires>
+
+  <releases>
+    <release version="1.0.0" date="2026-03-23">
+      <description>
+        <p>Initial release.</p>
+        <ul>
+          <li>Status tab with live scheduler view and tools status indicators</li>
+          <li>Control tab to start, stop, and switch schedulers with mode and custom flags</li>
+          <li>Reference tab with per-scheduler workload descriptions</li>
+          <li>Flags tab with filterable per-scheduler custom flags reference</li>
+          <li>Setup tab shown when scxctl is not detected, with installation guidance</li>
+          <li>System tray icon with colour-coded status indicator</li>
+          <li>Uses system Qt theme — respects light and dark mode</li>
+        </ul>
+      </description>
+    </release>
+  </releases>
+
+  <content_rating type="oars-1.1" />
+
+</component>
