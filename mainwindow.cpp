@@ -10,6 +10,8 @@
 #include <QPixmap>
 #include <QPainter>
 #include <QRegularExpression>
+#include <QStandardPaths>
+#include <QDir>
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -24,10 +26,105 @@ static QIcon makeColorIcon(const QColor &color) {
     return QIcon(pm);
 }
 
+// ─── scx-tools Detection ────────────────────────────────────────────────────
+
+bool MainWindow::isScxctlInstalled() {
+    return !QStandardPaths::findExecutable("scxctl").isEmpty();
+}
+
+bool MainWindow::isCoprEnabled() {
+    // On non-dnf systems the directory won't exist — treat as not applicable (return false).
+    const QDir repoDir("/etc/yum.repos.d");
+    if (!repoDir.exists()) return false;
+    const QStringList matches = repoDir.entryList(
+        {"*bieszczaders*kernel-cachyos-addons*"}, QDir::Files);
+    return !matches.isEmpty();
+}
+
+void MainWindow::refreshToolStatus() {
+    auto applyStatus = [](QLabel *lbl, bool ok, const QString &naText = QString()) {
+        if (!naText.isEmpty() && lbl->text() == "N/A") return; // already set to N/A
+        if (ok) {
+            lbl->setText("Yes");
+            lbl->setStyleSheet("color: green; font-weight: bold;");
+        } else {
+            lbl->setText("No");
+            lbl->setStyleSheet("color: red; font-weight: bold;");
+        }
+    };
+
+    // COPR: only meaningful on dnf-based systems
+    const bool dnfPresent = !QStandardPaths::findExecutable("dnf").isEmpty();
+    if (!dnfPresent) {
+        coprStatusLabel->setText("N/A");
+        coprStatusLabel->setStyleSheet("font-weight: bold;");
+    } else {
+        applyStatus(coprStatusLabel, isCoprEnabled());
+    }
+
+    applyStatus(scxToolsStatusLabel, isScxctlInstalled());
+}
+
+void MainWindow::buildSetupTab() {
+    setupTab = new QWidget;
+    auto *layout = new QVBoxLayout(setupTab);
+    layout->setContentsMargins(32, 32, 32, 32);
+    layout->setSpacing(16);
+
+    auto *titleLabel = new QLabel("⚠  scx-tools not detected");
+    QFont tf = titleLabel->font();
+    tf.setPointSize(13);
+    tf.setBold(true);
+    titleLabel->setFont(tf);
+
+    auto *bodyLabel = new QLabel(
+        "This application requires <b>scx-tools</b> (<code>scxctl</code>) to function.<br><br>"
+        "It was not found on your system PATH. Please install it using your "
+        "distribution's package manager or from the upstream source, then restart "
+        "this application.<br><br>"
+        "<b>Fedora (via COPR):</b><br>"
+        "<code>sudo dnf copr enable bieszczaders/kernel-cachyos-addons<br>"
+        "sudo dnf install scx-tools scx-scheds</code><br><br>"
+        "<b>Other distributions:</b><br>"
+        "See <a href='https://github.com/sched-ext/scx'>github.com/sched-ext/scx</a> "
+        "for packaging and build instructions."
+    );
+    bodyLabel->setTextFormat(Qt::RichText);
+    bodyLabel->setOpenExternalLinks(true);
+    bodyLabel->setWordWrap(true);
+    bodyLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+
+    layout->addStretch();
+    layout->addWidget(titleLabel);
+    layout->addWidget(bodyLabel);
+    layout->addStretch();
+}
+
+void MainWindow::applySetupMode() {
+    tabWidget->insertTab(0, setupTab, "⚠ Setup");
+    tabWidget->setCurrentIndex(0);
+    for (int i = 1; i < tabWidget->count(); ++i)
+        tabWidget->setTabEnabled(i, false);
+    autoRefreshTimer->stop();
+}
+
+void MainWindow::applyNormalMode() {
+    const int setupIdx = tabWidget->indexOf(setupTab);
+    if (setupIdx != -1)
+        tabWidget->removeTab(setupIdx);
+    for (int i = 0; i < tabWidget->count(); ++i)
+        tabWidget->setTabEnabled(i, true);
+    tabWidget->setCurrentIndex(0);
+    autoRefreshTimer->start();
+    refreshToolStatus();
+    refreshSchedulerList();
+    refreshStatus();
+}
+
 // ─── Constructor ────────────────────────────────────────────────────────────
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
-    setWindowTitle("SCX Scheduler Manager");
+    setWindowTitle("LGL SCX Scheduler Manager");
     setMinimumSize(640, 520);
     resize(720, 580);
 
@@ -39,11 +136,15 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     autoRefreshTimer = new QTimer(this);
     autoRefreshTimer->setInterval(5000);
     connect(autoRefreshTimer, &QTimer::timeout, this, &MainWindow::refreshStatus);
-    autoRefreshTimer->start();
 
-    // Initial data load
-    refreshSchedulerList();
-    refreshStatus();
+    buildSetupTab();
+
+    if (isScxctlInstalled()) {
+        applyNormalMode();
+    } else {
+        applySetupMode();
+        statusBar()->showMessage("scx-tools not found — see Setup tab");
+    }
 }
 
 MainWindow::~MainWindow() {}
@@ -64,7 +165,7 @@ void MainWindow::setupUi() {
     auto *headerLayout = new QHBoxLayout(headerFrame);
     headerLayout->setContentsMargins(12, 8, 12, 8);
 
-    auto *titleLabel = new QLabel("⚡ SCX Scheduler Manager");
+    auto *titleLabel = new QLabel("⚡ LGL SCX Scheduler Manager");
     titleLabel->setObjectName("titleLabel");
     QFont tf = titleLabel->font();
     tf.setPointSize(14);
@@ -132,6 +233,25 @@ void MainWindow::setupUi() {
     statusLayout->addWidget(stopBtn);
     statusLayout->addStretch();
 
+    // ── Tools status group ───────────────────────────────────────────────────
+    auto *toolsGroup = new QGroupBox("Tools");
+    auto *toolsGrid  = new QGridLayout(toolsGroup);
+    toolsGrid->setSpacing(8);
+
+    auto addToolRow = [&](QGridLayout *g, int row, const QString &label, QLabel *&valLabel) {
+        auto *lbl = new QLabel(label);
+        lbl->setObjectName("infoKey");
+        valLabel = new QLabel("—");
+        g->addWidget(lbl, row, 0);
+        g->addWidget(valLabel, row, 1);
+    };
+
+    addToolRow(toolsGrid, 0, "COPR (kernel-cachyos-addons):", coprStatusLabel);
+    addToolRow(toolsGrid, 1, "scx-tools installed:",          scxToolsStatusLabel);
+    toolsGrid->setColumnStretch(1, 1);
+
+    statusLayout->addWidget(toolsGroup);
+
     tabWidget->addTab(statusTab, "Status");
 
     // ── Tab 2: Control ───────────────────────────────────────────────────────
@@ -155,6 +275,12 @@ void MainWindow::setupUi() {
     modeCombo = new QComboBox;
     modeCombo->addItems({"Auto", "Gaming", "Lowlatency", "Powersave"});
 
+    auto *modeNote = new QLabel("Note: Not all modes are supported by every scheduler. "
+                                "Unsupported modes may be ignored or cause the scheduler to fail. "
+                                "Auto is safe for all schedulers.");
+    modeNote->setWordWrap(true);
+    modeNote->setEnabled(false); // use disabled style for a subtle/secondary appearance
+
     auto *flagsKeyLabel = new QLabel("Custom flags:");
     flagsKeyLabel->setObjectName("infoKey");
     customFlagsEdit = new QLineEdit;
@@ -166,6 +292,7 @@ void MainWindow::setupUi() {
     schedGrid->addWidget(modeCombo,       1, 1);
     schedGrid->addWidget(flagsKeyLabel,   2, 0);
     schedGrid->addWidget(customFlagsEdit, 2, 1);
+    schedGrid->addWidget(modeNote,        3, 0, 1, 2);
     schedGrid->setColumnStretch(1, 1);
 
     auto *btnRow = new QHBoxLayout;
@@ -370,6 +497,7 @@ void MainWindow::setupUi() {
         auto *nameItem = new QTableWidgetItem(s.name);
         nameItem->setFont(QFont("Monospace", 9));
         nameItem->setForeground(QColor("#ff9900"));
+        nameItem->setTextAlignment(Qt::AlignLeft | Qt::AlignTop);
         nameItem->setData(Qt::UserRole, s.name); // for filtering later if needed
         table->setItem(i, 0, nameItem);
 
@@ -565,6 +693,7 @@ void MainWindow::setupUi() {
 
     tabWidget->addTab(flagsTab, "Flags");
 
+
     // Resize rows whenever the user switches to either reference tab
     connect(tabWidget, &QTabWidget::currentChanged, this, [this](int index) {
         Q_UNUSED(index);
@@ -574,241 +703,15 @@ void MainWindow::setupUi() {
 
     rootLayout->addWidget(tabWidget);
 
-    // ── Style — brand style guide ─────────────────────────────────────────────
-    // Colours: bg #0b0f0b · panel #0f160f · border rgba(0,255,0,0.18)
-    //          accent #00ff00 · cmd/code #ff9900 · danger #ff4444 · text #f9f9f9
-    // Font: Roboto Mono (monospace stack fallback)
-    setStyleSheet(R"(
-        QMainWindow, QWidget {
-            background-color: #0b0f0b;
-            color: #f9f9f9;
-            font-family: "Roboto Mono", ui-monospace, "SFMono-Regular", Menlo, Monaco,
-                         Consolas, "Liberation Mono", "Courier New", monospace;
-            font-size: 9.5pt;
-        }
-
-        /* ── Header ── */
-        #headerFrame {
-            background: linear-gradient(180deg, rgba(0,255,0,0.06), rgba(0,0,0,0)), #0f160f;
-            border: 1px solid rgba(0,255,0,0.18);
-            border-radius: 14px;
-        }
-        #titleLabel {
-            color: #00ff00;
-            font-weight: 700;
-        }
-        #statusDotStopped  { color: #ff4444; }
-        #statusDotRunning  { color: #00ff00; }
-        #statusLabelStopped { color: #ff4444; }
-        #statusLabelRunning { color: #00ff00; }
-
-        /* ── GroupBox (panel style) ── */
-        QGroupBox {
-            background: linear-gradient(180deg, rgba(0,255,0,0.06), rgba(0,0,0,0)), #0f160f;
-            border: 1px solid rgba(0,255,0,0.18);
-            border-radius: 14px;
-            margin-top: 12px;
-            padding: 8px;
-            color: #00ff00;
-            font-weight: 700;
-            font-size: 9pt;
-        }
-        QGroupBox::title {
-            subcontrol-origin: margin;
-            left: 10px;
-            padding: 0 4px;
-            color: #00ff00;
-        }
-
-        /* ── Info labels ── */
-        #infoKey { color: rgba(249,249,249,0.75); }
-        #infoVal { color: #f9f9f9; font-weight: 700; }
-
-        /* ── Buttons ── */
-        QPushButton {
-            border-radius: 10px;
-            padding: 6px 14px;
-            font-weight: 700;
-            font-family: "Roboto Mono", monospace;
-        }
-        #primaryBtn {
-            background: rgba(0,0,0,0.55);
-            color: #00ff00;
-            border: 1px solid rgba(0,255,0,0.75);
-        }
-        #primaryBtn:hover  { background: #00ff00; color: #000000; border-color: #00ff00; }
-        #primaryBtn:pressed { background: rgba(0,255,0,0.70); color: #000000; }
-        #primaryBtn:disabled { background: rgba(0,0,0,0.30); color: rgba(249,249,249,0.25); border-color: rgba(0,255,0,0.12); }
-
-        #secondaryBtn {
-            background: rgba(0,0,0,0.55);
-            color: rgba(249,249,249,0.75);
-            border: 1px solid rgba(0,255,0,0.18);
-        }
-        #secondaryBtn:hover { background: rgba(0,255,0,0.10); color: #f9f9f9; border-color: rgba(0,255,0,0.40); }
-
-        #dangerBtn {
-            background: rgba(255,68,68,0.08);
-            color: #ff4444;
-            border: 1px solid #ff4444;
-        }
-        #dangerBtn:hover   { background: #ff4444; color: #000000; }
-        #dangerBtn:pressed { background: rgba(255,68,68,0.70); }
-        #dangerBtn:disabled {
-            background: rgba(0,0,0,0.20);
-            color: rgba(249,249,249,0.25);
-            border: 1px solid rgba(249,249,249,0.12);
-        }
-
-        /* ── Inputs ── */
-        QComboBox, QLineEdit {
-            background: rgba(0,0,0,0.60);
-            border: 1px solid rgba(255,153,0,0.28);
-            border-radius: 10px;
-            padding: 5px 8px;
-            color: #ff9900;
-            selection-background-color: rgba(255,153,0,0.22);
-        }
-        QComboBox:focus, QLineEdit:focus {
-            border-color: rgba(0,255,0,0.75);
-            color: #f9f9f9;
-        }
-        QComboBox QAbstractItemView {
-            background: #0f160f;
-            border: 1px solid rgba(0,255,0,0.18);
-            color: #f9f9f9;
-            selection-background-color: rgba(0,255,0,0.15);
-        }
-        QComboBox::drop-down { border: none; }
-        QComboBox::down-arrow { image: none; width: 0; }
-
-        /* ── Tabs ── */
-        QTabWidget::pane {
-            border: 1px solid rgba(0,255,0,0.18);
-            border-radius: 14px;
-            background: #0f160f;
-        }
-        QTabBar::tab {
-            background: #0b0f0b;
-            color: rgba(249,249,249,0.75);
-            padding: 7px 20px;
-            border: 1px solid rgba(0,255,0,0.18);
-            border-bottom: none;
-            border-top-left-radius: 10px;
-            border-top-right-radius: 10px;
-            margin-right: 2px;
-            font-weight: 700;
-        }
-        QTabBar::tab:selected {
-            background: #0f160f;
-            color: #00ff00;
-            border-bottom-color: #0f160f;
-        }
-        QTabBar::tab:hover { background: rgba(0,255,0,0.06); color: #f9f9f9; }
-
-        /* ── Log view ── */
-        #logView {
-            background: rgba(0,0,0,0.60);
-            border: 1px solid rgba(255,153,0,0.28);
-            border-radius: 12px;
-            color: #f9f9f9;
-        }
-
-        /* ── Checkbox ── */
-        QCheckBox { color: rgba(249,249,249,0.75); spacing: 6px; }
-        QCheckBox::indicator {
-            width: 16px; height: 16px;
-            border-radius: 4px;
-            border: 1px solid rgba(0,255,0,0.40);
-            background: rgba(0,0,0,0.55);
-        }
-        QCheckBox::indicator:checked {
-            background: #00ff00;
-            border-color: #00ff00;
-        }
-
-        /* ── Scrollbar ── */
-        QScrollBar:vertical {
-            background: #0b0f0b;
-            width: 8px;
-            border-radius: 4px;
-        }
-        QScrollBar::handle:vertical {
-            background: rgba(0,255,0,0.28);
-            border-radius: 4px;
-            min-height: 20px;
-        }
-        QScrollBar::handle:vertical:hover { background: rgba(0,255,0,0.55); }
-        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
-
-        /* ── Status bar ── */
-        QStatusBar {
-            background: #0f160f;
-            color: rgba(249,249,249,0.75);
-            font-size: 8.5pt;
-            border-top: 1px solid rgba(0,255,0,0.18);
-        }
-
-        /* ── Reference tab ── */
-        #refTitle { color: #00ff00; font-weight: 700; }
-        #refSubtitle { color: rgba(249,249,249,0.75); }
-
-        #refTable {
-            background: rgba(0,0,0,0.60);
-            border: 1px solid rgba(0,255,0,0.18);
-            border-radius: 12px;
-            gridline-color: rgba(0,255,0,0.10);
-            color: #f9f9f9;
-            font-size: 9pt;
-        }
-        #refTable::item {
-            padding: 8px 10px;
-            border: none;
-        }
-        #refTable::item:selected {
-            background: rgba(0,255,0,0.12);
-            color: #00ff00;
-        }
-        #refTable::item:alternate {
-            background: rgba(0,255,0,0.04);
-        }
-        QHeaderView::section {
-            background: #0f160f;
-            color: #00ff00;
-            font-weight: 700;
-            font-size: 8.5pt;
-            padding: 6px 8px;
-            border: none;
-            border-bottom: 1px solid rgba(0,255,0,0.28);
-        }
-    )");
+    // Use the system theme — no custom stylesheet applied here.
 
     statusBar()->showMessage("Ready");
 }
 
 void MainWindow::setupMenuBar() {
-    auto *helpMenu = menuBar()->addMenu("Help");
-    auto *aboutAction = helpMenu->addAction("About SCX Scheduler Manager");
+    auto *aboutMenu = menuBar()->addMenu("About");
+    auto *aboutAction = aboutMenu->addAction("About LGL SCX Scheduler Manager");
     connect(aboutAction, &QAction::triggered, this, &MainWindow::showAbout);
-
-    // Style the menu bar to match the brand
-    menuBar()->setStyleSheet(R"(
-        QMenuBar {
-            background: #0b0f0b;
-            color: rgba(249,249,249,0.75);
-            border-bottom: 1px solid rgba(0,255,0,0.18);
-            font-family: "Roboto Mono", monospace;
-            font-size: 9pt;
-        }
-        QMenuBar::item:selected { background: rgba(0,255,0,0.10); color: #f9f9f9; }
-        QMenu {
-            background: #0f160f;
-            border: 1px solid rgba(0,255,0,0.18);
-            color: #f9f9f9;
-            font-family: "Roboto Mono", monospace;
-        }
-        QMenu::item:selected { background: rgba(0,255,0,0.15); color: #00ff00; }
-    )");
 }
 
 void MainWindow::setupTray() {
@@ -825,7 +728,7 @@ void MainWindow::setupTray() {
     trayQuitAction = trayMenu->addAction("Quit", qApp, &QApplication::quit);
 
     trayIcon->setContextMenu(trayMenu);
-    trayIcon->setToolTip("SCX Scheduler Manager");
+    trayIcon->setToolTip("LGL SCX Scheduler Manager");
     trayIcon->show();
 
     connect(trayIcon, &QSystemTrayIcon::activated, this, &MainWindow::onTrayActivated);
@@ -989,7 +892,7 @@ void MainWindow::refreshSchedulerList() {
     connect(proc, &QProcess::readyReadStandardError, this, [this, proc]() {
         QString err = QString::fromUtf8(proc->readAllStandardError()).trimmed();
         if (!err.isEmpty())
-            appendLog("scxctl list: " + err, "rgba(249,249,249,0.75)");
+            appendLog("scxctl list: " + err);
     });
 
     connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
@@ -998,7 +901,7 @@ void MainWindow::refreshSchedulerList() {
         const QString output = QString::fromUtf8(proc->readAllStandardOutput()).trimmed();
         proc->deleteLater();
 
-        appendLog("scxctl list output: " + output, "rgba(249,249,249,0.75)");
+        appendLog("scxctl list output: " + output);
 
         if (exitCode == 0 && output.contains('"')) {
             QRegularExpression re(R"x("([^"]+)")x");
@@ -1023,7 +926,7 @@ void MainWindow::refreshSchedulerList() {
                 schedulerCombo->addItem("scx_" + s, s);
                 supportedSchedulers << s;
             }
-            appendLog("Tip: ensure scx_loader.service is running for the real list", "rgba(249,249,249,0.75)");
+            appendLog("Tip: ensure scx_loader.service is running for the real list");
         }
 
         appendLog(QString("Scheduler list ready: %1 schedulers").arg(schedulerCombo->count()), "#00ff00");
@@ -1057,11 +960,27 @@ void MainWindow::startScheduler() {
     if (sched.isEmpty()) sched = schedulerCombo->currentText().remove("scx_");
     if (sched.isEmpty()) { statusBar()->showMessage("Select a scheduler first", 3000); return; }
 
+    static const QRegularExpression validSched("^[a-z0-9_-]+$");
+    if (!validSched.match(sched).hasMatch()) {
+        appendLog("Invalid scheduler name — aborting.", "#ff4444");
+        statusBar()->showMessage("Invalid scheduler name", 3000);
+        return;
+    }
+
     QStringList args{"start", "-s", sched};
     QString mode = modeCombo->currentText().toLower();
     if (mode != "auto") args << "-m" << mode;
     QString flags = customFlagsEdit->text().trimmed();
-    if (!flags.isEmpty()) args << "-a" << flags; // scxctl uses -a / --args
+    if (!flags.isEmpty()) {
+        static const QRegularExpression validFlags("^[A-Za-z0-9 _.=\\-]*$");
+        if (!validFlags.match(flags).hasMatch()) {
+            appendLog("Custom flags contain invalid characters — aborting. "
+                      "Permitted: letters, digits, spaces, - _ . =", "#ff4444");
+            statusBar()->showMessage("Invalid characters in custom flags", 3000);
+            return;
+        }
+        args << "-a" << flags; // scxctl uses -a / --args
+    }
 
     runScxctl(args, QString("Starting scx_%1").arg(sched));
 }
@@ -1074,6 +993,13 @@ void MainWindow::switchScheduler() {
     QString sched = schedulerCombo->currentData().toString();
     if (sched.isEmpty()) sched = schedulerCombo->currentText().remove("scx_");
     if (sched.isEmpty()) { statusBar()->showMessage("Select a scheduler first", 3000); return; }
+
+    static const QRegularExpression validSched("^[a-z0-9_-]+$");
+    if (!validSched.match(sched).hasMatch()) {
+        appendLog("Invalid scheduler name — aborting.", "#ff4444");
+        statusBar()->showMessage("Invalid scheduler name", 3000);
+        return;
+    }
 
     QStringList args{"switch", "-s", sched};
     QString mode = modeCombo->currentText().toLower();
@@ -1092,8 +1018,11 @@ void MainWindow::toggleServiceAutostart() {
     connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
             this, [this, proc, enable](int exitCode, QProcess::ExitStatus) {
         proc->deleteLater();
-        if (exitCode == 126) {
-            appendLog("Authorisation cancelled — service state unchanged.", "#ff9900");
+        if (exitCode == 126 || exitCode == 127) {
+            const QString msg = (exitCode == 126)
+                ? "Authorisation cancelled — service state unchanged."
+                : "pkexec not found — is polkit installed?";
+            appendLog(msg, "#ff9900");
             // Revert the checkbox since nothing actually changed
             QSignalBlocker blocker(autostartCheck);
             autostartCheck->setChecked(!enable);
@@ -1112,22 +1041,27 @@ void MainWindow::clearLog() { logView->clear(); }
 
 void MainWindow::showAbout() {
     QMessageBox about(this);
-    about.setWindowTitle("About SCX Scheduler Manager");
+    about.setWindowTitle("About LGL SCX Scheduler Manager");
     about.setTextFormat(Qt::RichText);
     about.setText(
-        "<b style='color:#00ff00;font-family:monospace'>SCX Scheduler Manager</b> v1.0.0<br><br>"
-        "A Qt6 GUI for managing sched-ext BPF schedulers<br>"
-        "via <code style='color:#ff9900'>scxctl</code> and <code style='color:#ff9900'>scx_loader</code>.<br><br>"
-        "Designed for Fedora with the CachyOS kernel.<br><br>"
-        "<a style='color:#00ff00' href='https://github.com/sched-ext/scx'>sched-ext upstream</a> &nbsp;|&nbsp; "
-        "<a style='color:#00ff00' href='https://wiki.cachyos.org'>CachyOS wiki</a>"
-    );
-    about.setStyleSheet(
-        "QMessageBox { background:#0b0f0b; color:#f9f9f9; font-family:'Roboto Mono',monospace; }"
-        "QLabel { color:#f9f9f9; }"
-        "QPushButton { background:rgba(0,0,0,0.55); color:#00ff00; border:1px solid rgba(0,255,0,0.75);"
-        "  border-radius:8px; padding:5px 14px; font-family:'Roboto Mono',monospace; }"
-        "QPushButton:hover { background:#00ff00; color:#000000; }"
+        "<h3>LGL SCX Scheduler Manager</h3>"
+        "<p style='color:gray;'>Version 1.0.0</p>"
+        "<p>A Qt6 GUI for managing sched-ext BPF schedulers.<br>"
+        "Start, stop, and switch schedulers via <code>scxctl</code> and <code>scx_loader</code> "
+        "without touching the terminal.</p>"
+        "<hr/>"
+        "<p><b>Created by LinuxGamerLife and his helper ClaudeAI</b></p>"
+        "<table cellspacing='6'>"
+        "<tr><td>🌐</td><td><a href='https://linuxgamerlife.net'>linuxgamerlife.net</a></td></tr>"
+        "<tr><td>🐙</td><td><a href='https://github.com/linuxgamerlife'>github.com/linuxgamerlife</a></td></tr>"
+        "<tr><td>▶</td><td><a href='https://www.youtube.com/@LinuxGamerLife'>youtube.com/@LinuxGamerLife</a></td></tr>"
+        "<tr><td>🐦</td><td><a href='https://x.com/linuxgamerlife'>x.com/linuxgamerlife</a></td></tr>"
+        "<tr><td>☕</td><td><a href='https://ko-fi.com/linuxgamerlife'>ko-fi.com/linuxgamerlife</a></td></tr>"
+        "</table>"
+        "<hr/>"
+        "<p><a href='https://github.com/sched-ext/scx'>sched-ext upstream</a> &nbsp;|&nbsp; "
+        "<a href='https://wiki.cachyos.org'>CachyOS wiki</a></p>"
+        "<p style='color:gray; font-size:small;'>Released under the MIT licence. Use at your own risk.</p>"
     );
     about.exec();
 }
@@ -1142,7 +1076,7 @@ void MainWindow::updateStatusIndicator(bool running, const QString &schedulerNam
         schedulerNameLabel->setText("scx_" + schedulerName);
         modeLabel->setText(currentMode.isEmpty() ? "—" : currentMode);
         serviceStatusLabel->setText("active");
-        serviceStatusLabel->setStyleSheet("color:#00ff00; font-weight:bold;");
+        serviceStatusLabel->setStyleSheet("font-weight:bold;");
         stopBtn->setEnabled(true);
         trayStatusAction->setText("Status: scx_" + schedulerName);
         trayIcon->setIcon(makeColorIcon("#00ff00"));
@@ -1154,7 +1088,7 @@ void MainWindow::updateStatusIndicator(bool running, const QString &schedulerNam
         schedulerNameLabel->setText("—");
         modeLabel->setText("—");
         serviceStatusLabel->setText("inactive");
-        serviceStatusLabel->setStyleSheet("color:rgba(249,249,249,0.40); font-weight:bold;");
+        serviceStatusLabel->setStyleSheet("font-weight:bold;");
         stopBtn->setEnabled(false);
         trayStatusAction->setText("Status: Stopped");
         trayIcon->setIcon(makeColorIcon("#ff4444"));
@@ -1169,8 +1103,11 @@ void MainWindow::updateStatusIndicator(bool running, const QString &schedulerNam
 
 void MainWindow::appendLog(const QString &text, const QString &color) {
     const QString ts = QDateTime::currentDateTime().toString("hh:mm:ss");
+    const QString c = color.isEmpty()
+        ? palette().text().color().name()
+        : color;
     logView->append(QString("<span style='color:%1'>[%2] %3</span>")
-                        .arg(color, ts, text.toHtmlEscaped()));
+                        .arg(c, ts, text.toHtmlEscaped()));
 }
 
 // ─── Tray ─────────────────────────────────────────────────────────────────────

@@ -48,8 +48,16 @@ private:
     void setupTray();
     void setupConnections();
     void runScxctl(const QStringList &args, const QString &description = QString());
-    void appendLog(const QString &text, const QString &color = "#f9f9f9");
+    void appendLog(const QString &text, const QString &color = QString());
     void updateStatusIndicator(bool running, const QString &schedulerName = QString());
+
+    // scx-tools detection and setup mode
+    bool isScxctlInstalled();
+    bool isCoprEnabled();
+    void buildSetupTab();
+    void applySetupMode();
+    void applyNormalMode();
+    void refreshToolStatus();
 
     // Core state
     QString     currentOutput;
@@ -97,6 +105,13 @@ private:
     // Reference tables — stored for resize-on-tab-switch and resizeEvent
     QTableWidget *refTableWidget   = nullptr;
     QTableWidget *flagsTableWidget = nullptr;
+
+    // Setup tab — shown when scxctl is not found on PATH
+    QWidget *setupTab = nullptr;
+
+    // Tools status labels on Status tab
+    QLabel *coprStatusLabel    = nullptr;
+    QLabel *scxToolsStatusLabel = nullptr;
 
 protected:
     void resizeEvent(QResizeEvent *event) override {
