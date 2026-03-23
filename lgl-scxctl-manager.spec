@@ -5,7 +5,7 @@ Summary:        Qt6 GUI for managing sched-ext BPF schedulers via scxctl
 
 License:        MIT
 URL:            https://github.com/linuxgamerlife/lgl-scxctl-manager
-Source0:        %{name}-%{version}.zip
+Source0:        https://github.com/linuxgamerlife/%{name}/archive/refs/tags/v%{version}.zip
 BuildRequires:  cmake >= 3.16
 BuildRequires:  unzip
 BuildRequires:  gcc-c++
@@ -28,9 +28,7 @@ If scxctl is not installed, the application opens in setup mode and
 displays installation guidance without hard-failing.
 
 %prep
-cd %{_builddir}
-unzip -q %{SOURCE0}
-%setup -q -n lgl-scxctl-manager -D -T
+%autosetup -n %{name}-%{version}
 
 %build
 mkdir -p build
