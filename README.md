@@ -7,6 +7,12 @@ A Qt6 GUI application for managing sched-ext BPF schedulers via `scxctl`.
 ![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 
+<p align="center">
+  <a href="https://ko-fi.com/G2G3V70LW">
+    <img src="https://storage.ko-fi.com/cdn/kofi6.png?v=6" height="36" alt="Buy Me a Coffee at ko-fi.com" />
+  </a>
+</p>
+
 ## Features
 
 - **Status tab** – live view of the running scheduler, mode, and service state; auto-refreshes every 5 seconds with change-detection (no log noise when idle)
