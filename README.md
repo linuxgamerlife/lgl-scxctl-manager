@@ -25,15 +25,15 @@ A Qt6 GUI application for managing sched-ext BPF schedulers via `scxctl`.
 sudo dnf copr enable bieszczaders/kernel-cachyos-addons
 sudo dnf install scx-tools scx-scheds
 ```
-
-### Recommended — COPR
+### How to install
+## Recommended — COPR
 
 ```bash
 sudo dnf copr enable linuxgamerlife/lgl-scxctl-manager
 sudo dnf install lgl-scxctl-manager
 ```
 
-### RPM from Releases
+## RPM from Releases
 
 Download the latest `.rpm` from [GitHub Releases](https://github.com/linuxgamerlife/lgl-scxctl-manager/releases) and double-click to install via Discover.
 
@@ -41,13 +41,13 @@ Download the latest `.rpm` from [GitHub Releases](https://github.com/linuxgamerl
 
 
 
-### Build dependencies
+## Build dependencies
 
 ```bash
 sudo dnf install cmake gcc-c++ qt6-qtbase-devel
 ```
 
-## Building
+# Building
 
 ```bash
 git clone https://github.com/linuxgamerlife/lgl-scxctl-manager
@@ -56,7 +56,7 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j$(nproc)
 ```
 
-## Running
+# Running
 
 ```bash
 ./build/lgl-scxctl-manager
@@ -64,7 +64,7 @@ cmake --build build -j$(nproc)
 
 A polkit agent must be running (e.g. `polkit-gnome-authentication-agent-1` or `lxqt-policykit-agent`).
 
-## Installing system-wide
+# Installing system-wide
 
 ```bash
 sudo cmake --install build
