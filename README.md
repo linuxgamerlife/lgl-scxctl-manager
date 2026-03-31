@@ -8,6 +8,12 @@ A Qt6 GUI application for managing sched-ext BPF schedulers via `scxctl`.
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 [![Fedora](https://img.shields.io/badge/Fedora-43%20%7C%2044-blue?logo=fedora&logoColor=white)](https://fedoraproject.org)
 
+<p align="left">
+  <a href="https://ko-fi.com/G2G3V70LW">
+    <img src="https://storage.ko-fi.com/cdn/kofi6.png?v=6" height="36" alt="Buy Me a Coffee at ko-fi.com" />
+  </a>
+</p>
+
 ## Features
 
 - **Status tab** – live view of the running scheduler, mode, and service state; auto-refreshes every 5 seconds with change-detection (no log noise when idle)
@@ -26,7 +32,7 @@ A Qt6 GUI application for managing sched-ext BPF schedulers via `scxctl`.
 sudo dnf copr enable bieszczaders/kernel-cachyos-addons
 sudo dnf install scx-tools scx-scheds
 ```
-
+## How to install
 ### Recommended — COPR
 
 ```bash
