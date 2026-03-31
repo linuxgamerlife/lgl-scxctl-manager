@@ -6,6 +6,7 @@ A Qt6 GUI application for managing sched-ext BPF schedulers via `scxctl`.
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
+[![Fedora](https://img.shields.io/badge/Fedora-43%20%7C%2044-blue?logo=fedora&logoColor=white)](https://fedoraproject.org)
 
 ## Features
 
@@ -35,7 +36,10 @@ sudo dnf install lgl-scxctl-manager
 
 ### RPM from Releases
 
-Download the latest `.rpm` from [GitHub Releases](https://github.com/linuxgamerlife/lgl-scxctl-manager/releases) and double-click to install via Discover.
+Download the `.rpm` for your Fedora version from [GitHub Releases](https://github.com/linuxgamerlife/lgl-scxctl-manager/releases) and double-click to install via Discover.
+
+- `lgl-scxctl-manager-1.0.0-1.fc43.x86_64.rpm` — Fedora 43
+- `lgl-scxctl-manager-1.0.0-1.fc44.x86_64.rpm` — Fedora 44
 
 > After installing from Discover, close it and launch the app from your application menu rather than from the Discover install screen.
 
