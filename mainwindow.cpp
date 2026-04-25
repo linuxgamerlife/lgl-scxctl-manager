@@ -1118,3 +1118,12 @@ void MainWindow::onTrayActivated(QSystemTrayIcon::ActivationReason reason) {
         if (isVisible()) { raise(); activateWindow(); }
     }
 }
+
+void MainWindow::closeEvent(QCloseEvent *event) {
+    if (trayIcon->isVisible()) {
+        hide();
+        event->ignore();
+    } else {
+        event->accept();
+    }
+}

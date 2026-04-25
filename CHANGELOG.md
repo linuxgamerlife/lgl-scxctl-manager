@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.1] - 2026-04-25
+
+### Changed
+
+- Closing the main window now minimises the app to the system tray instead of quitting; use **Quit** from the tray context menu to exit fully
+
 ## [1.0.0] - 2026-03-23
 
 ### Initial release

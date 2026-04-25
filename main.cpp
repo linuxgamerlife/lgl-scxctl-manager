@@ -9,6 +9,7 @@ int main(int argc, char *argv[]) {
     app.setOrganizationName("lgl-scxctl-manager");
 
     app.setWindowIcon(QIcon(":/packaging/lgl-scxctl-manager_icon.png"));
+    app.setQuitOnLastWindowClosed(false);
 
     MainWindow w;
     w.show();

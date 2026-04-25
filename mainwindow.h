@@ -21,6 +21,7 @@
 #include <QHeaderView>
 #include <QCheckBox>
 #include <QFrame>
+#include <QCloseEvent>
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -114,6 +115,7 @@ private:
     QLabel *scxToolsStatusLabel = nullptr;
 
 protected:
+    void closeEvent(QCloseEvent *event) override;
     void resizeEvent(QResizeEvent *event) override {
         QMainWindow::resizeEvent(event);
         if (refTableWidget)   refTableWidget->resizeRowsToContents();
