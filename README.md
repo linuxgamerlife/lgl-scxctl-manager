@@ -110,6 +110,14 @@ A filterable table of per-scheduler custom flags. Use the dropdown to narrow by 
 - Double-click to show/hide the window
 - Right-click for quick start/stop and **Quit** to exit fully
 
+> **Tray support on some desktop environments / window managers** (e.g. Niri, Noctalia): a StatusNotifierItem host may be required.
+>
+> ```bash
+> sudo dnf install gnome-shell-extension-appindicator
+> ```
+>
+> Tested on Niri Noctalia. Other environments may differ.
+
 ## Available Schedulers
 
 The scheduler list is populated dynamically from `scxctl list`. On a typical install this includes:
