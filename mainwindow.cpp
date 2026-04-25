@@ -1045,7 +1045,7 @@ void MainWindow::showAbout() {
     about.setTextFormat(Qt::RichText);
     about.setText(
         "<h3>LGL SCX Scheduler Manager</h3>"
-        "<p style='color:gray;'>Version 1.0.0</p>"
+        "<p style='color:gray;'>Version 1.0.1</p>"
         "<p>A Qt6 GUI for managing sched-ext BPF schedulers.<br>"
         "Start, stop, and switch schedulers via <code>scxctl</code> and <code>scx_loader</code> "
         "without touching the terminal.</p>"

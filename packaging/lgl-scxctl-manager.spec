@@ -1,5 +1,5 @@
 Name:           lgl-scxctl-manager
-Version:        1.0.0
+Version:        1.0.1
 Release:        1%{?dist}
 Summary:        Qt6 GUI for managing sched-ext BPF schedulers via scxctl
 
@@ -94,5 +94,8 @@ fi
 %{_datadir}/metainfo/com.linuxgamerlife.lgl-scxctl-manager.metainfo.xml
 
 %changelog
+* Fri Apr 25 2026 LinuxGamerLife <contact@linuxgamerlife.com> - 1.0.1-1
+- Closing the main window now minimises to system tray instead of quitting
+
 * Mon Mar 23 2026 LinuxGamerLife <contact@linuxgamerlife.com> - 1.0.0-1
 - Initial release

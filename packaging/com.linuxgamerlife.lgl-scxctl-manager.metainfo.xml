@@ -60,6 +60,11 @@
   </requires>
 
   <releases>
+    <release version="1.0.1" date="2026-04-25">
+      <description>
+        <p>Closing the main window now minimises the app to the system tray instead of quitting. Use Quit from the tray context menu to exit fully.</p>
+      </description>
+    </release>
     <release version="1.0.0" date="2026-03-23">
       <description>
         <p>Initial release.</p>

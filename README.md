@@ -38,8 +38,8 @@ sudo dnf install lgl-scxctl-manager
 
 Download the `.rpm` for your Fedora version from [GitHub Releases](https://github.com/linuxgamerlife/lgl-scxctl-manager/releases) and double-click to install via Discover.
 
-- `lgl-scxctl-manager-1.0.0-1.fc43.x86_64.rpm` — Fedora 43
-- `lgl-scxctl-manager-1.0.0-1.fc44.x86_64.rpm` — Fedora 44
+- `lgl-scxctl-manager-1.0.1-1.fc43.x86_64.rpm` — Fedora 43
+- `lgl-scxctl-manager-1.0.1-1.fc44.x86_64.rpm` — Fedora 44
 
 > After installing from Discover, close it and launch the app from your application menu rather than from the Discover install screen.
 
