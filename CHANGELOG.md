@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2026-09-20
+
+### Changed
+
+- Project renamed from `lgl-scxctl-manager` to `lgl-scheduler-manager`; the binary, desktop file, icon, RPM package name, and AppStream ID all change accordingly; the package is now published in the `lgl-toolkit` COPR and the old `lgl-scxctl-manager` COPR is deprecated, so existing installs must be removed and the new package installed (see the README)
+- New application icon, shipped as a full hicolor icon set (16×16 to 1024×1024) (#5)
+- The system tray now shows the app icon with a green/red/grey status badge instead of a plain coloured dot (#4)
+- The Reference tab now lists schedulers in the same order as the scheduler dropdowns (#3)
+
+### Fixed
+
+- Only one copy of the app can run at a time; launching it again brings the existing window to the front (#2)
+- Clicking the tray icon now shows/hides the window; previously only a double-click did, which many desktops never send
+
 ## [1.0.1] - 2026-04-25
 
 ### Changed

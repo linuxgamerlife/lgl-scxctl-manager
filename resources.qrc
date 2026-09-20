@@ -1,5 +1,5 @@
 <RCC>
     <qresource prefix="/">
-        <file>packaging/lgl-scxctl-manager_icon.png</file>
+        <file>packaging/hicolor/256x256/apps/lgl-scheduler-manager.png</file>
     </qresource>
 </RCC>

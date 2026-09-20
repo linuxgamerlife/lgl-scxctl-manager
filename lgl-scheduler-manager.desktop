@@ -2,10 +2,10 @@
 Categories=System;Settings;
 Comment[en_GB]=Manage sched-ext BPF schedulers via scxctl
 Comment=Manage sched-ext BPF schedulers via scxctl
-Exec=lgl-scxctl-manager
+Exec=lgl-scheduler-manager
 GenericName[en_GB]=Scheduler Manager
 GenericName=Scheduler Manager
-Icon=lgl-scxctl-manager
+Icon=lgl-scheduler-manager
 Keywords=scheduler;sched-ext;scx;bpf;kernel;cachyos;performance;
 MimeType=
 Name[en_GB]=SCX Scheduler Manager

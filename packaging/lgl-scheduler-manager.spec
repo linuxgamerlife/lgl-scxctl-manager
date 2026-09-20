@@ -1,10 +1,10 @@
-Name:           lgl-scxctl-manager
-Version:        1.0.1
+Name:           lgl-scheduler-manager
+Version:        1.1.0
 Release:        1%{?dist}
 Summary:        Qt6 GUI for managing sched-ext BPF schedulers via scxctl
 
 License:        MIT
-URL:            https://github.com/linuxgamerlife/lgl-scxctl-manager
+URL:            https://github.com/linuxgamerlife/lgl-scheduler-manager
 Source0:        https://github.com/linuxgamerlife/%{name}/archive/refs/tags/v%{version}.zip
 BuildRequires:  cmake >= 3.16
 BuildRequires:  unzip
@@ -40,24 +40,27 @@ cmake .. \
 
 %install
 # Main binary
-install -Dm755 build/lgl-scxctl-manager \
-    %{buildroot}%{_bindir}/lgl-scxctl-manager
+install -Dm755 build/lgl-scheduler-manager \
+    %{buildroot}%{_bindir}/lgl-scheduler-manager
 
 # Desktop entry
-install -Dm644 lgl-scxctl-manager.desktop \
-    %{buildroot}%{_datadir}/applications/lgl-scxctl-manager.desktop
+install -Dm644 lgl-scheduler-manager.desktop \
+    %{buildroot}%{_datadir}/applications/lgl-scheduler-manager.desktop
 
-# Icon
-install -Dm644 packaging/lgl-scxctl-manager_icon.png \
-    %{buildroot}%{_datadir}/icons/hicolor/256x256/apps/lgl-scxctl-manager.png
+# Icons (hicolor theme, one per size)
+for icon in packaging/hicolor/*/apps/%{name}.png; do
+    size=$(basename "$(dirname "$(dirname "$icon")")")
+    install -Dm644 "$icon" \
+        %{buildroot}%{_datadir}/icons/hicolor/$size/apps/%{name}.png
+done
 
 # Pixmaps fallback
-install -Dm644 packaging/lgl-scxctl-manager_icon.png \
-    %{buildroot}%{_datadir}/pixmaps/lgl-scxctl-manager.png
+install -Dm644 packaging/hicolor/256x256/apps/%{name}.png \
+    %{buildroot}%{_datadir}/pixmaps/lgl-scheduler-manager.png
 
 # AppStream metainfo
-install -Dm644 packaging/com.linuxgamerlife.lgl-scxctl-manager.metainfo.xml \
-    %{buildroot}%{_datadir}/metainfo/com.linuxgamerlife.lgl-scxctl-manager.metainfo.xml
+install -Dm644 packaging/com.linuxgamerlife.lgl-scheduler-manager.metainfo.xml \
+    %{buildroot}%{_datadir}/metainfo/com.linuxgamerlife.lgl-scheduler-manager.metainfo.xml
 
 %post
 if [ -x /usr/bin/gtk-update-icon-cache ]; then
@@ -87,14 +90,21 @@ fi
 %files
 %license LICENSE
 %doc README.md CHANGELOG.md
-%{_bindir}/lgl-scxctl-manager
-%{_datadir}/applications/lgl-scxctl-manager.desktop
-%{_datadir}/icons/hicolor/256x256/apps/lgl-scxctl-manager.png
-%{_datadir}/pixmaps/lgl-scxctl-manager.png
-%{_datadir}/metainfo/com.linuxgamerlife.lgl-scxctl-manager.metainfo.xml
+%{_bindir}/lgl-scheduler-manager
+%{_datadir}/applications/lgl-scheduler-manager.desktop
+%{_datadir}/icons/hicolor/*/apps/lgl-scheduler-manager.png
+%{_datadir}/pixmaps/lgl-scheduler-manager.png
+%{_datadir}/metainfo/com.linuxgamerlife.lgl-scheduler-manager.metainfo.xml
 
 %changelog
-* Fri Apr 25 2026 LinuxGamerLife <contact@linuxgamerlife.com> - 1.0.1-1
+* Sun Sep 20 2026 LinuxGamerLife <contact@linuxgamerlife.com> - 1.1.0-1
+- Project renamed from lgl-scxctl-manager to lgl-scheduler-manager
+- New hicolor icon set; tray icon is now the app icon with a status badge
+- Reference tab ordered to match the scheduler dropdowns
+- Fix: only one instance of the app can run at a time
+- Fix: clicking the tray icon shows/hides the window
+
+* Sat Apr 25 2026 LinuxGamerLife <contact@linuxgamerlife.com> - 1.0.1-1
 - Closing the main window now minimises to system tray instead of quitting
 
 * Mon Mar 23 2026 LinuxGamerLife <contact@linuxgamerlife.com> - 1.0.0-1

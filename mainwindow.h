@@ -30,6 +30,9 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+    // Show the window if hidden (e.g. minimised to tray) and bring it to the front
+    void bringToFront();
+
 private slots:
     void refreshStatus();
     void refreshSchedulerList();

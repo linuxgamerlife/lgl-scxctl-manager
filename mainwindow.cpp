@@ -15,15 +15,25 @@
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-static QIcon makeColorIcon(const QColor &color) {
-    QPixmap pm(16, 16);
-    pm.fill(Qt::transparent);
-    QPainter p(&pm);
-    p.setRenderHint(QPainter::Antialiasing);
-    p.setBrush(color);
-    p.setPen(Qt::NoPen);
-    p.drawEllipse(1, 1, 14, 14);
-    return QIcon(pm);
+// Tray icon: the app icon with a small status badge in the bottom-right corner.
+// Rendered at several sizes so the badge stays crisp on any panel scale.
+static QIcon makeTrayIcon(const QColor &badge) {
+    static const QPixmap base(":/packaging/hicolor/256x256/apps/lgl-scheduler-manager.png");
+
+    QIcon icon;
+    for (const int size : {16, 22, 24, 32, 48, 64}) {
+        QPixmap pm = base.scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        const int d = qRound(size * 0.45);
+        const int ring = qMax(1, size / 16);
+
+        QPainter p(&pm);
+        p.setRenderHint(QPainter::Antialiasing);
+        p.setBrush(badge);
+        p.setPen(QPen(QColor(0, 0, 0, 200), ring));
+        p.drawEllipse(QRectF(size - d - ring / 2.0, size - d - ring / 2.0, d, d));
+        icon.addPixmap(pm);
+    }
+    return icon;
 }
 
 // ─── scx-tools Detection ────────────────────────────────────────────────────
@@ -148,6 +158,13 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 }
 
 MainWindow::~MainWindow() {}
+
+void MainWindow::bringToFront() {
+    setWindowState(windowState() & ~Qt::WindowMinimized);
+    show();
+    raise();
+    activateWindow();
+}
 
 // ─── UI Setup ────────────────────────────────────────────────────────────────
 
@@ -394,54 +411,19 @@ void MainWindow::setupUi() {
             "Cache-topology aware — keeps tasks near their L2/L3 cache. Runs entirely in BPF (low overhead)."
         },
         {
-            "scx_lavd",
-            "Gaming, audio production, real-time / low-latency workloads",
-            "Battery-constrained devices (can increase power draw); pure server workloads",
-            "Latency-Aware Virtual Deadline scheduler. Computes a latency-criticality score per task. "
-            "Core Compaction keeps active cores at higher frequency when load < 50%, saving power. "
-            "Autopilot mode auto-switches between performance/balanced/powersave."
+            "scx_beerland",
+            "General desktop, similar workloads to scx_bpfland but lower overhead",
+            "Workloads needing the full feature set of bpfland",
+            "A reduced-overhead variant of scx_bpfland by the same author. "
+            "Strips back some of bpfland's more expensive per-task tracking to lower scheduler overhead on busy systems. "
+            "Good alternative if bpfland feels heavy on your hardware."
         },
         {
-            "scx_rusty",
-            "Multi-core desktops and servers, NUMA systems, general-purpose",
-            "Single-core or very low core-count machines",
-            "Partitions CPUs by last-level cache domain to minimise cross-cache migration. "
-            "Good scalability on high core-count systems. Hybrid BPF + userspace design."
-        },
-        {
-            "scx_flash",
-            "High-throughput batch jobs, compilation, video encoding, servers",
-            "Latency-sensitive interactive use; gaming",
-            "Optimised for throughput over responsiveness. "
-            "Minimal overhead; suited to sustained CPU-bound workloads."
-        },
-        {
-            "scx_p2dq",
-            "Mixed desktop/server, systems needing fair load balancing",
-            "Workloads requiring strict real-time guarantees",
-            "Pick-2 randomised load balancing keeps queues shallow. "
-            "Simple design means low scheduler overhead. PELT-based load tracking."
-        },
-        {
-            "scx_nest",
-            "Systems where boosting clock speed matters; lightly-loaded desktops",
-            "Heavily loaded systems (all cores busy)",
-            "Places tasks on already-warm, high-frequency cores to keep turbo boost active. "
-            "Effective when CPU utilisation is low to moderate."
-        },
-        {
-            "scx_simple",
-            "Testing, debugging, learning sched_ext, minimal systems",
-            "Any production workload",
-            "Minimal FIFO/least-runtime policy. No topology awareness. "
-            "Useful as a baseline for benchmarking other schedulers."
-        },
-        {
-            "scx_layered",
-            "Power users who want per-application scheduling policies",
-            "Users who don't want to write a config file",
-            "Classifies threads into named layers (like cgroups) and applies a different "
-            "policy to each. Highly flexible but requires manual JSON configuration."
+            "scx_cake",
+            "Experimental desktop/gaming use on CachyOS",
+            "Production workloads — this is experimental",
+            "CachyOS-specific experimental scheduler. Not yet in upstream scx. "
+            "Intended for desktop and gaming workloads. Behaviour and flags may change significantly between updates — check the CachyOS Discord for current status."
         },
         {
             "scx_cosmos",
@@ -452,20 +434,40 @@ void MainWindow::setupUi() {
             "Uses 10µs time slices by default. Good general-purpose choice with low overhead."
         },
         {
-            "scx_beerland",
-            "General desktop, similar workloads to scx_bpfland but lower overhead",
-            "Workloads needing the full feature set of bpfland",
-            "A reduced-overhead variant of scx_bpfland by the same author. "
-            "Strips back some of bpfland's more expensive per-task tracking to lower scheduler overhead on busy systems. "
-            "Good alternative if bpfland feels heavy on your hardware."
+            "scx_flash",
+            "High-throughput batch jobs, compilation, video encoding, servers",
+            "Latency-sensitive interactive use; gaming",
+            "Optimised for throughput over responsiveness. "
+            "Minimal overhead; suited to sustained CPU-bound workloads."
         },
         {
-            "scx_tickless",
-            "Cloud computing, virtualisation, HPC, server batch workloads",
-            "Latency-sensitive or interactive desktop use — nohz_full adds syscall overhead",
-            "Routes all scheduling events through a small pool of primary CPUs, allowing other CPUs to run tickless (no scheduler interrupts). "
-            "Reduces OS noise for VM guests and HPC jobs. Requires booting with nohz_full= kernel parameter to fully realise the benefit. "
-            "Not designed for desktop or gaming use."
+            "scx_lavd",
+            "Gaming, audio production, real-time / low-latency workloads",
+            "Battery-constrained devices (can increase power draw); pure server workloads",
+            "Latency-Aware Virtual Deadline scheduler. Computes a latency-criticality score per task. "
+            "Core Compaction keeps active cores at higher frequency when load < 50%, saving power. "
+            "Autopilot mode auto-switches between performance/balanced/powersave."
+        },
+        {
+            "scx_layered",
+            "Power users who want per-application scheduling policies",
+            "Users who don't want to write a config file",
+            "Classifies threads into named layers (like cgroups) and applies a different "
+            "policy to each. Highly flexible but requires manual JSON configuration."
+        },
+        {
+            "scx_nest",
+            "Systems where boosting clock speed matters; lightly-loaded desktops",
+            "Heavily loaded systems (all cores busy)",
+            "Places tasks on already-warm, high-frequency cores to keep turbo boost active. "
+            "Effective when CPU utilisation is low to moderate."
+        },
+        {
+            "scx_p2dq",
+            "Mixed desktop/server, systems needing fair load balancing",
+            "Workloads requiring strict real-time guarantees",
+            "Pick-2 randomised load balancing keeps queues shallow. "
+            "Simple design means low scheduler overhead. PELT-based load tracking."
         },
         {
             "scx_pandemonium",
@@ -475,11 +477,11 @@ void MainWindow::setupUi() {
             "CachyOS experimental scheduler; not yet in upstream scx. May change significantly between updates."
         },
         {
-            "scx_cake",
-            "Experimental desktop/gaming use on CachyOS",
-            "Production workloads — this is experimental",
-            "CachyOS-specific experimental scheduler. Not yet in upstream scx. "
-            "Intended for desktop and gaming workloads. Behaviour and flags may change significantly between updates — check the CachyOS Discord for current status."
+            "scx_rusty",
+            "Multi-core desktops and servers, NUMA systems, general-purpose",
+            "Single-core or very low core-count machines",
+            "Partitions CPUs by last-level cache domain to minimise cross-cache migration. "
+            "Good scalability on high core-count systems. Hybrid BPF + userspace design."
         },
         {
             "scx_rustland",
@@ -488,6 +490,21 @@ void MainWindow::setupUi() {
             "Predecessor to scx_bpfland. Scheduling decisions run in userspace (Rust), "
             "which adds a context-switch overhead on every scheduling event. "
             "Interesting for learning how userspace schedulers work but not recommended for daily use."
+        },
+        {
+            "scx_simple",
+            "Testing, debugging, learning sched_ext, minimal systems",
+            "Any production workload",
+            "Minimal FIFO/least-runtime policy. No topology awareness. "
+            "Useful as a baseline for benchmarking other schedulers."
+        },
+        {
+            "scx_tickless",
+            "Cloud computing, virtualisation, HPC, server batch workloads",
+            "Latency-sensitive or interactive desktop use — nohz_full adds syscall overhead",
+            "Routes all scheduling events through a small pool of primary CPUs, allowing other CPUs to run tickless (no scheduler interrupts). "
+            "Reduces OS noise for VM guests and HPC jobs. Requires booting with nohz_full= kernel parameter to fully realise the benefit. "
+            "Not designed for desktop or gaming use."
         },
     };
 
@@ -715,7 +732,7 @@ void MainWindow::setupMenuBar() {
 }
 
 void MainWindow::setupTray() {
-    trayIcon = new QSystemTrayIcon(makeColorIcon(Qt::gray), this);
+    trayIcon = new QSystemTrayIcon(makeTrayIcon(Qt::gray), this);
     trayMenu = new QMenu(this);
 
     trayStatusAction = trayMenu->addAction("Status: Unknown");
@@ -724,7 +741,7 @@ void MainWindow::setupTray() {
     trayStartAction = trayMenu->addAction("Start Scheduler");
     trayStopAction  = trayMenu->addAction("Stop Scheduler");
     trayMenu->addSeparator();
-    trayMenu->addAction("Show Window", this, [this]{ show(); raise(); activateWindow(); });
+    trayMenu->addAction("Show Window", this, &MainWindow::bringToFront);
     trayQuitAction = trayMenu->addAction("Quit", qApp, &QApplication::quit);
 
     trayIcon->setContextMenu(trayMenu);
@@ -1045,7 +1062,7 @@ void MainWindow::showAbout() {
     about.setTextFormat(Qt::RichText);
     about.setText(
         "<h3>LGL SCX Scheduler Manager</h3>"
-        "<p style='color:gray;'>Version 1.0.1</p>"
+        "<p style='color:gray;'>Version 1.1.0</p>"
         "<p>A Qt6 GUI for managing sched-ext BPF schedulers.<br>"
         "Start, stop, and switch schedulers via <code>scxctl</code> and <code>scx_loader</code> "
         "without touching the terminal.</p>"
@@ -1079,7 +1096,7 @@ void MainWindow::updateStatusIndicator(bool running, const QString &schedulerNam
         serviceStatusLabel->setStyleSheet("font-weight:bold;");
         stopBtn->setEnabled(true);
         trayStatusAction->setText("Status: scx_" + schedulerName);
-        trayIcon->setIcon(makeColorIcon("#00ff00"));
+        trayIcon->setIcon(makeTrayIcon("#00ff00"));
         trayIcon->setToolTip("SCX: running scx_" + schedulerName);
     } else {
         statusDot->setObjectName("statusDotStopped");
@@ -1091,7 +1108,7 @@ void MainWindow::updateStatusIndicator(bool running, const QString &schedulerNam
         serviceStatusLabel->setStyleSheet("font-weight:bold;");
         stopBtn->setEnabled(false);
         trayStatusAction->setText("Status: Stopped");
-        trayIcon->setIcon(makeColorIcon("#ff4444"));
+        trayIcon->setIcon(makeTrayIcon("#ff4444"));
         trayIcon->setToolTip("SCX: No scheduler running");
     }
     // Force Qt to re-evaluate the objectName-based stylesheet rules
@@ -1113,10 +1130,14 @@ void MainWindow::appendLog(const QString &text, const QString &color) {
 // ─── Tray ─────────────────────────────────────────────────────────────────────
 
 void MainWindow::onTrayActivated(QSystemTrayIcon::ActivationReason reason) {
-    if (reason == QSystemTrayIcon::DoubleClick) {
-        setVisible(!isVisible());
-        if (isVisible()) { raise(); activateWindow(); }
-    }
+    // A left click arrives as Trigger. Many desktops (StatusNotifierItem hosts) never send
+    // DoubleClick, so it is not handled here — otherwise a double-click would toggle twice.
+    if (reason != QSystemTrayIcon::Trigger)
+        return;
+    if (isVisible() && !isMinimized())
+        hide();
+    else
+        bringToFront();
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {

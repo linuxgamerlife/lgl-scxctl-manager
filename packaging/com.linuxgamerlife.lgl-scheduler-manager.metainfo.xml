@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
 
-  <id>com.linuxgamerlife.lgl-scxctl-manager</id>
+  <id>com.linuxgamerlife.lgl-scheduler-manager</id>
 
   <name>SCX Scheduler Manager</name>
   <summary>Qt6 GUI for managing sched-ext BPF schedulers via scxctl</summary>
@@ -25,10 +25,10 @@
     </p>
   </description>
 
-  <launchable type="desktop-id">lgl-scxctl-manager.desktop</launchable>
+  <launchable type="desktop-id">lgl-scheduler-manager.desktop</launchable>
 
-  <url type="homepage">https://github.com/linuxgamerlife/lgl-scxctl-manager</url>
-  <url type="bugtracker">https://github.com/linuxgamerlife/lgl-scxctl-manager/issues</url>
+  <url type="homepage">https://github.com/linuxgamerlife/lgl-scheduler-manager</url>
+  <url type="bugtracker">https://github.com/linuxgamerlife/lgl-scheduler-manager/issues</url>
 
   <developer id="com.linuxgamerlife">
     <name>LinuxGamerLife</name>
@@ -60,6 +60,18 @@
   </requires>
 
   <releases>
+    <release version="1.1.0" date="2026-09-20">
+      <description>
+        <p>Project renamed from lgl-scxctl-manager to lgl-scheduler-manager. The binary, desktop file, icon, package name, and AppStream ID have changed accordingly.</p>
+        <ul>
+          <li>New application icon set</li>
+          <li>System tray shows the app icon with a green/red status badge</li>
+          <li>Reference tab lists schedulers in the same order as the dropdowns</li>
+          <li>Fixed: launching the app again no longer opens a second copy; it brings the existing window to the front</li>
+          <li>Fixed: clicking the tray icon now shows or hides the window</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.0.1" date="2026-04-25">
       <description>
         <p>Closing the main window now minimises the app to the system tray instead of quitting. Use Quit from the tray context menu to exit fully.</p>
